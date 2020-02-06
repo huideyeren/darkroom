@@ -7,8 +7,7 @@
 ## Dependency
 
 - Pipenv
-- Pillow
-- Numpy
+- scikit-image
 
 ## Usage
 
@@ -23,3 +22,4 @@
 ## Reference
 
 - https://qiita.com/yoya/items/dba7c40b31f832e9bc2a
+- https://tutorialmore.com/questions-1401982.htm
