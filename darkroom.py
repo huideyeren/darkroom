@@ -1,22 +1,26 @@
-import os
 import datetime
 import glob
-from PIL import Image, ImageOps
-import numpy as np
+from skimage.color import rgb2gray
+from skimage import io, img_as_float, img_as_ubyte, util, exposure
+import warnings
+
+now = datetime.datetime.now()
+now_s = now.strftime('%Y-%m-%d_%H:%M:%S')
 
 files = glob.glob('./negative/*.jpg')
 
-for file in files:
-    img = Image.open(file)
-    img = ImageOps.invert(img)
-    if img.mode != "RGB":
-        img = img.convert("RGB") # any format to RGB
-    rgb = np.array(img, dtype="float32");
-    rgbL = pow(rgb/255.0, 2.2)
-    r, g, b = rgbL[:,:,0], rgbL[:,:,1], rgbL[:,:,2]
-    grayL = 0.299 * r + 0.587 * g + 0.114 * b  # BT.601
-    gray = pow(grayL, 1.0/2.2)*255
-    im_gray = Image.fromarray(gray.astype("uint8"))
-    im_gray.save(('./positive/photo_' + str(datetime.datetime.now()) + '.jpg'), quality=100)
+for i, file in enumerate(files):
+    img = io.imread(file)
+    img = img_as_float(img)
+    img_inverted = util.invert(img)
+    
+    imgL = exposure.adjust_gamma(img_inverted, 2.2)
+    img_grayL = rgb2gray(imgL)
+    img_gray = exposure.adjust_gamma(img_grayL, 1.0/2.2)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        img_gray = img_as_ubyte(img_gray)
+    io.imsave(('./positive/{0}_{1}.jpg'.format(now_s, (i + 1))), img_gray, quality=100)
+    print('{0}/{1} done!'.format((i + 1), str(len(files))))
 
-print('Done!')
+print('All images have been converted!')
