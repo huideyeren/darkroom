@@ -15,7 +15,7 @@ for i, file in enumerate(files):
     img_inverted = util.invert(img)
     
     imgL = exposure.adjust_gamma(img_inverted, 2.2)
-    img_grayL = rgb2gray(img_inverted)
+    img_grayL = rgb2gray(imgL)
     img_gray = exposure.adjust_gamma(img_grayL, 1.0/2.2)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
