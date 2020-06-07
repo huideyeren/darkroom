@@ -1,3 +1,5 @@
+#!/usr/bin/env pipenv-shebang
+
 import argparse
 import datetime
 import glob
@@ -12,18 +14,30 @@ parser.add_argument(
     '--monochrome',
     help='Convert to monochrome.',
     action='store_true'
-    )
+)
 parser.add_argument(
     '-n',
     '--negative',
     help='Convert negative to positive.',
     action='store_true'
-    )
+)
+parser.add_argument(
+    '-g',
+    '--gamma',
+    help='Set gamma value.',
+    type=float
+)
+parser.add_argument(
+    '-l',
+    '--logarithmic',
+    help='Set logarithmic value.',
+    type=float
+)
 
 args = parser.parse_args()
 
 now = datetime.datetime.now()
-now_s = now.strftime('%Y-%m-%d_%H:%M:%S')
+now_s = now.strftime('%Y-%m-%d %H-%M-%S')
 
 files = glob.glob('./negative/*.jpg')
 
@@ -38,6 +52,12 @@ for i, file in enumerate(files):
         imgL = exposure.adjust_gamma(img, 2.2)
         img_grayL = rgb2gray(imgL)
         img = exposure.adjust_gamma(img_grayL, 1.0/2.2)
+
+    if args.gamma is not None:
+        img = exposure.adjust_gamma(img, args.gamma)
+    
+    if args.logarithmic is not None:
+        img = exposure.adjust_log(img, args.logarithmic)
         
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')

@@ -129,10 +129,10 @@ dmypy.json
 .pyre/
 
 # Pictures
-negative/*.jpg
-negative/*.jpeg
-positive/*.jpg
-positive/*.jpeg
+negative/**/*.jpg
+negative/**/*.jpeg
+positive/**/*.jpg
+positive/**/*.jpeg
 .DS_Store
-negative/.DS_Store
-positive/.DS_Store
+negative/**/.DS_Store
+positive/**/.DS_Store
