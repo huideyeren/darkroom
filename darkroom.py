@@ -37,7 +37,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 now = datetime.datetime.now()
-now_s = now.strftime('%Y-%m-%d %H-%M-%S')
+now_s = now.strftime('%Y-%m-%d_%H-%M-%S')
 
 files = glob.glob('./negative/*.jpg')
 
