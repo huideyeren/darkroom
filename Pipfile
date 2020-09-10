@@ -9,8 +9,11 @@ mypy = "*"
 black = "*"
 
 [packages]
-scikit-image = '*'
+scikit-image = "*"
 pipenv-shebang = "*"
+numpy = "*"
+Pillow = "*"
+colorcorrect = "*"
 
 [requires]
 python_version = "3.8"
