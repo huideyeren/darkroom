@@ -7,7 +7,7 @@ import glob
 import colorcorrect.algorithm as cca
 from colorcorrect.util import from_pil, to_pil
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 from skimage.color import rgb2gray
 from skimage import io, img_as_float, img_as_ubyte, exposure
 import warnings
@@ -34,6 +34,12 @@ parser.add_argument(
 )
 parser.add_argument("-g", "--gamma", help="Set gamma value.", type=float)
 parser.add_argument("-l", "--logarithmic", help="Set logarithmic value.", type=float)
+parser.add_argument(
+    "-t",
+    "--tosaka",
+    help="Create a high-contrast image like the one Tosaka senior likes. Set the contrast value.",
+    type=float,
+)
 
 args = parser.parse_args()
 
@@ -63,7 +69,8 @@ for i, file in enumerate(files):
         img = exposure.adjust_gamma(img_grayL, 1.0 / 2.2)
 
     if args.gamma is not None:
-        img = exposure.adjust_gamma(img, args.gamma)
+        imgG = exposure.adjust_gamma(img, args.gamma)
+        img = exposure.adjust_gamma(imgG, 1.0 / args.gamma)
 
     if args.logarithmic is not None:
         img = exposure.adjust_log(img, args.logarithmic)
@@ -72,7 +79,15 @@ for i, file in enumerate(files):
         warnings.simplefilter("ignore")
         img = img_as_ubyte(img)
 
-    io.imsave(("./positive/{0}_{1}.jpg".format(now_s, (i + 1))), img, quality=100)
+    img = Image.fromarray(img.astype(np.uint8))
+
+    if args.tosaka is not None:
+        imgC = ImageEnhance.Contrast(img)
+        img = imgC.enhance(args.tosaka)
+
+    img.save(
+        "./positive/{0}_{1}.jpg".format(now_s, (i + 1)), quality=100, subsampling=0
+    )
     print("{0}/{1} done!".format((i + 1), str(len(files))))
 
 print("All images have been converted!")
