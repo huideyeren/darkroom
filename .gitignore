@@ -131,6 +131,7 @@ dmypy.json
 # Pictures
 negative/**/*.jpg
 negative/**/*.jpeg
+negative/**/*.png
 positive/**/*.jpg
 positive/**/*.jpeg
 .DS_Store

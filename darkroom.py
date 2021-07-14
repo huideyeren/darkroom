@@ -3,6 +3,8 @@
 import argparse
 import datetime
 import glob
+import os
+import sys
 
 import colorcorrect.algorithm as cca
 from colorcorrect.util import from_pil, to_pil
@@ -46,9 +48,17 @@ args = parser.parse_args()
 now = datetime.datetime.now()
 now_s = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-files = glob.glob("./negative/*.jpg")
+types = ("*.jpg", "*.JPG", "*.jpeg", "*.JPEG", "*.png", "*.PNG")
+files_glob = []
+for files in types:
+    files_glob.extend(
+        glob.glob(
+            os.path.join(".", "negative", "**", files),
+            recursive=True,
+        )
+    )
 
-for i, file in enumerate(files):
+for i, file in enumerate(files_glob):
     img = Image.open(file)
 
     if args.negative is True:
