@@ -32,7 +32,8 @@ parser.add_argument(
 parser.add_argument(
     "-n", "--negative", help="Convert negative to positive.", action="store_true"
 )
-parser.add_argument("-g", "--gamma", help="Set gamma value.", type=float)
+parser.add_argument("-g", "--gamma", help="Set gamma value.", type=float, default=2.2)
+parser.add_argument("-f", "--fixgamma", help="Fix by gamma value.", action="store_true")
 parser.add_argument("-l", "--logarithmic", help="Set logarithmic value.", type=float)
 
 args = parser.parse_args()
@@ -46,26 +47,32 @@ for i, file in enumerate(files):
     img = Image.open(file)
 
     if args.negative is True:
+        print("Invert colors.")
         img = ImageOps.invert(img)
 
     if args.colorautoadjust is True:
+        print("Using automatic color equalization.")
         img = to_pil(cca.automatic_color_equalization(from_pil(img)))
 
     if args.colorstretch is True:
+        print("Using gray world color equalization.")
         img = to_pil(cca.stretch(cca.grey_world(from_pil(img))))
 
     img = np.asarray(img)
     img = img_as_float(img)
 
     if args.monochrome is True:
-        imgL = exposure.adjust_gamma(img, 2.2)
+        print("Gamma value is %s.", args.gamma)
+        imgL = exposure.adjust_gamma(img, args.gamma)
         img_grayL = rgb2gray(imgL)
-        img = exposure.adjust_gamma(img_grayL, 1.0 / 2.2)
+        img = exposure.adjust_gamma(img_grayL, 1.0 / args.gamma)
 
-    if args.gamma is not None:
+    if args.fixgamma is True:
+        print("Gamma value is %s.", args.gamma)
         img = exposure.adjust_gamma(img, args.gamma)
 
     if args.logarithmic is not None:
+        print("Logarithmic value is %s.", args.logarithmic)
         img = exposure.adjust_log(img, args.logarithmic)
 
     with warnings.catch_warnings():
