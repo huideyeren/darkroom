@@ -3,14 +3,12 @@
 import argparse
 import datetime
 import glob
+import os
 
 import colorcorrect.algorithm as cca
 from colorcorrect.util import from_pil, to_pil
 import numpy as np
-from PIL import Image, ImageOps
-from skimage.color import rgb2gray
-from skimage import io, img_as_float, img_as_ubyte, exposure
-import warnings
+from PIL import Image, ImageOps, ImageEnhance
 
 parser = argparse.ArgumentParser(description="Negative Film Utility")
 
@@ -32,18 +30,29 @@ parser.add_argument(
 parser.add_argument(
     "-n", "--negative", help="Convert negative to positive.", action="store_true"
 )
-parser.add_argument("-g", "--gamma", help="Set gamma value.", type=float, default=2.2)
-parser.add_argument("-f", "--fixgamma", help="Fix by gamma value.", action="store_true")
-parser.add_argument("-l", "--logarithmic", help="Set logarithmic value.", type=float)
+parser.add_argument(
+    "-t",
+    "--tosaka",
+    help="Create a high-contrast image like the one Tosaka senior likes. Set the contrast value.",
+    type=float,
+)
 
 args = parser.parse_args()
 
 now = datetime.datetime.now()
 now_s = now.strftime("%Y-%m-%d_%H-%M-%S")
 
-files = glob.glob("./negative/*.jpg")
+types = ("*.jpg", "*.JPG", "*.jpeg", "*.JPEG", "*.png", "*.PNG")
+files_glob = []
+for files in types:
+    files_glob.extend(
+        glob.glob(
+            os.path.join(".", "negative", "**", files),
+            recursive=True,
+        )
+    )
 
-for i, file in enumerate(files):
+for i, file in enumerate(files_glob):
     img = Image.open(file)
 
     if args.negative is True:
@@ -58,28 +67,33 @@ for i, file in enumerate(files):
         print("Using gray world color equalization.")
         img = to_pil(cca.stretch(cca.grey_world(from_pil(img))))
 
-    img = np.asarray(img)
-    img = img_as_float(img)
+    if img.mode == "RGBA":
+        img.load()
+        background = Image.new("RGB", img.size, (255, 255, 255))
+        background.paste(img, mask=img.split()[3])
 
     if args.monochrome is True:
-        print("Gamma value is %s.", args.gamma)
-        imgL = exposure.adjust_gamma(img, args.gamma)
-        img_grayL = rgb2gray(imgL)
-        img = exposure.adjust_gamma(img_grayL, 1.0 / args.gamma)
+        if img.mode == "L" or img.mode == "LA":
+            pass
 
-    if args.fixgamma is True:
-        print("Gamma value is %s.", args.gamma)
-        img = exposure.adjust_gamma(img, args.gamma)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        rgb = np.array(img, dtype="float32")
 
-    if args.logarithmic is not None:
-        print("Logarithmic value is %s.", args.logarithmic)
-        img = exposure.adjust_log(img, args.logarithmic)
+        rgbL = pow(rgb / 255.0, 2.2)
+        r, g, b = rgbL[:, :, 0], rgbL[:, :, 1], rgbL[:, :, 2]
+        grayL = 0.299 * r + 0.587 * g + 0.114 * b  # BT.601
+        gray = pow(grayL, 1.0 / 2.2) * 255
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        img = img_as_ubyte(img)
+        img = Image.fromarray(gray.astype("uint8"))
 
-    io.imsave(("./positive/{0}_{1}.jpg".format(now_s, (i + 1))), img, quality=100)
-    print("{0}/{1} done!".format((i + 1), str(len(files))))
+    if args.tosaka is not None:
+        imgC = ImageEnhance.Contrast(img)
+        img = imgC.enhance(args.tosaka)
+
+    img.save(
+        "./positive/{0}_{1}.jpg".format(now_s, (i + 1)), quality=100, subsampling=0
+    )
+    print("{0}/{1} done!".format((i + 1), str(len(files_glob))))
 
 print("All images have been converted!")
