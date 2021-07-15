@@ -4,15 +4,11 @@ import argparse
 import datetime
 import glob
 import os
-import sys
 
 import colorcorrect.algorithm as cca
 from colorcorrect.util import from_pil, to_pil
 import numpy as np
 from PIL import Image, ImageOps, ImageEnhance
-from skimage.color import rgb2gray
-from skimage import io, img_as_float, img_as_ubyte, exposure
-import warnings
 
 parser = argparse.ArgumentParser(description="Negative Film Utility")
 
@@ -34,8 +30,6 @@ parser.add_argument(
 parser.add_argument(
     "-n", "--negative", help="Convert negative to positive.", action="store_true"
 )
-parser.add_argument("-g", "--gamma", help="Set gamma value.", type=float)
-parser.add_argument("-l", "--logarithmic", help="Set logarithmic value.", type=float)
 parser.add_argument(
     "-t",
     "--tosaka",
@@ -70,26 +64,25 @@ for i, file in enumerate(files_glob):
     if args.colorstretch is True:
         img = to_pil(cca.stretch(cca.grey_world(from_pil(img))))
 
-    img = np.asarray(img)
-    img = img_as_float(img)
+    if img.mode == "RGBA":
+        img.load()
+        background = Image.new("RGB", img.size, (255, 255, 255))
+        background.paste(img, mask=img.split()[3])
 
     if args.monochrome is True:
-        imgL = exposure.adjust_gamma(img, 2.2)
-        img_grayL = rgb2gray(imgL)
-        img = exposure.adjust_gamma(img_grayL, 1.0 / 2.2)
+        if img.mode == "L" or img.mode == "LA":
+            pass
 
-    if args.gamma is not None:
-        imgG = exposure.adjust_gamma(img, args.gamma)
-        img = exposure.adjust_gamma(imgG, 1.0 / args.gamma)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        rgb = np.array(img, dtype="float32")
 
-    if args.logarithmic is not None:
-        img = exposure.adjust_log(img, args.logarithmic)
+        rgbL = pow(rgb / 255.0, 2.2)
+        r, g, b = rgbL[:, :, 0], rgbL[:, :, 1], rgbL[:, :, 2]
+        grayL = 0.299 * r + 0.587 * g + 0.114 * b  # BT.601
+        gray = pow(grayL, 1.0 / 2.2) * 255
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        img = img_as_ubyte(img)
-
-    img = Image.fromarray(img.astype(np.uint8))
+        img = Image.fromarray(gray.astype("uint8"))
 
     if args.tosaka is not None:
         imgC = ImageEnhance.Contrast(img)
@@ -98,6 +91,6 @@ for i, file in enumerate(files_glob):
     img.save(
         "./positive/{0}_{1}.jpg".format(now_s, (i + 1)), quality=100, subsampling=0
     )
-    print("{0}/{1} done!".format((i + 1), str(len(files))))
+    print("{0}/{1} done!".format((i + 1), str(len(files_glob))))
 
 print("All images have been converted!")
