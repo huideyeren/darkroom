@@ -71,6 +71,7 @@ for i, file in enumerate(files_glob):
         img.load()
         background = Image.new("RGB", img.size, (255, 255, 255))
         background.paste(img, mask=img.split()[3])
+        img = background
 
     if args.monochrome is True:
         if img.mode == "L" or img.mode == "LA":
